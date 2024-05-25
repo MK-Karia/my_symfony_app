@@ -1,0 +1,37 @@
+{% extends "base.html.twig" %}
+{% block title %}User list{% endblock %}
+{% block body %}
+    <style>
+        h1 {
+            text-align: center;
+        }
+
+        .user-list-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .link-to-user {                   
+            color: #000000;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-around;
+        }
+    </style>
+    <h1>Все пользователи:</h1> 
+    <div class="user-list-block">
+        {% for user in userList %}
+            <div class="container">
+                <a class="link-to-user" href="/view_user/{{ user.id }}">
+                    <label>{{ user.firstName }} {{ user.lastname }}</label>
+                </a>
+                <a href="/delete_user/{{ user.id }}"><button>Удалить</button></a>    
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

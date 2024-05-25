@@ -1,0 +1,33 @@
+index:
+    path: /
+    controller: App\Controller\UserController::index
+    methods: GET
+
+register_user:
+    path: /register_user
+    controller: App\Controller\UserController::registerUser
+    methods: POST
+
+view_user:
+    path: /view_user/{userId}
+    controller: App\Controller\UserController::viewUser
+    methods: GET
+
+update_user:
+    path: /update_user/{userId}
+    controller: App\Controller\UserController::updateUser
+
+delete_user:
+    path: /delete_user/{userId}
+    controller: App\Controller\UserController::deleteUser
+    methods: GET
+
+user_list:
+    path: /user_list
+    controller: App\Controller\UserController::userList
+    methods: GET
+
+error_page:
+    path: /error_page/{mess}
+    controller: App\Controller\UserController::errorPage
+    methods: GET
