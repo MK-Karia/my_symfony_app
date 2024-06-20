@@ -2,6 +2,7 @@
 {% extends "base.html.twig" %}
 {% block title %}Add user{% endblock %}
 {% block body %}
+    <a href="/user_list">Все пользователи</a>
     <form  enctype="multipart/form-data" action="/register_user" method="post">
         <div>
             <label for="first_name">First Name:</label>

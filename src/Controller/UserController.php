@@ -3,24 +3,23 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Database\ConnectionProvider;
-use App\Model\User;
-use App\Database\UserTable;
+use App\Entity\User;
 use App\Utils;
-use App\View\PhpTemplateEngine;
+use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+
 class UserController extends AbstractController
 {
     private const DATE_TIME_FORMAT = 'Y-m-d';
-    private UserTable $table;
 
-    public function __construct()
+    private UserRepository $userRepository;
+
+    public function __construct(UserRepository $userRepository)
     {
-        $connection = ConnectionProvider::connectDatabase();
-        $this->table = new UserTable($connection);
+        $this->userRepository = $userRepository;
     }
 
     public function index(): Response
@@ -45,15 +44,18 @@ class UserController extends AbstractController
             null,
         );
 
-        if ($this->table->findByEmail($data->get('email')) != null) {
-            return $this->redirectToRoute('error_page');
+        if ($this->userRepository->findByEmail($data->get('email')) != null) {
+            $mess = 'The user with this email already exists';
+            return $this->redirectToRoute('error_page', ['mess' => $mess]);  
         } 
 
-        $userId = $this->table->saveUserToDatabase($user);
+        $userId = $this->userRepository->store($user);
+
         $file = $this->downloadImage($userId);
 
         if ($file != null){
-            $this->table->saveAvatarToDatabase($userId, $file);
+            $user->setAvatarPath($file);
+            $this->userRepository->store($user);
         }
 
         return $this->redirectToRoute('view_user', ['userId' => $userId], Response::HTTP_SEE_OTHER);
@@ -61,7 +63,7 @@ class UserController extends AbstractController
 
     public function updateUser(int $userId, Request $data): Response
     {
-        $user = $this->table->find($userId);
+        $user = $this->userRepository->findById($userId);
         if (!$user)
         {
             $mess = 'You can not update user with this ID';
@@ -69,8 +71,11 @@ class UserController extends AbstractController
         }
 
         if ($data->isMethod('post')) {
+            if ($this->userRepository->findByEmail($data->get('email')) != null) {
+                $mess = 'The user with this email already exists';
+                return $this->redirectToRoute('error_page', ['mess' => $mess]);  
+            } 
             $user = $this->updateUsersData($data);
-            $this->table->updateUser($user);  
             echo 'OK';
         }
 
@@ -89,14 +94,10 @@ class UserController extends AbstractController
 
     private function updateUsersData(Request $data): User{
         $id = (int)$data->get('user_id');
-        $user = $this->table->find($id);
+        $user = $this->userRepository->findById($id);
 
         $birthDate = Utils::parseDateTime($data->get('birth_date'), self::DATE_TIME_FORMAT);
         $birthDate = $birthDate->setTime(0, 0, 0);
-
-        if ($this->table->findByEmail($data->get('email')) != null) {
-            header('Location: ' . '/error_page.php', true, 303);
-        } 
 
         if ($user != null) {
             $user->setFirstName($data->get('first_name'));
@@ -116,7 +117,7 @@ class UserController extends AbstractController
             $user->setAvatarPath($file);
         }
         
-        $this->table->updateUser($user); 
+        $this->userRepository->store($user); 
         return $user;
     }
 
@@ -139,12 +140,12 @@ class UserController extends AbstractController
 
     public function deleteUser(int $userId): Response
     {
-        $user = $this->table->find($userId);
+        $user = $this->userRepository->findById($userId);
         if (!$user)
         {
             return $this->redirectToRoute('error_page');
         }
-        $this->table->deleteUser($user);
+        $this->userRepository->delete($user);
         if ($user->getAvatarPath() != null) {
             $this->deleteImage($user);
         }  
@@ -176,7 +177,7 @@ class UserController extends AbstractController
 
     public function viewUser(int $userId): Response
     {
-        $user = $this->table->find($userId);
+        $user = $this->userRepository->findById($userId);
         if (!$user)
         {
             $mess = 'There is not user with this ID';
@@ -198,7 +199,7 @@ class UserController extends AbstractController
 
     public function userList(): Response
     {
-        $userList = $this->table->getAllUsers();
+        $userList = $this->userRepository->listAll();
         return $this->render('user_list.html.twig', ['userList' => $userList]);
     }
 
